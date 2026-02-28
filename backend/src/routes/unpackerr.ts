@@ -3,15 +3,22 @@ import { z } from "zod";
 import type { UnpackerrManager } from "../services/unpackerrManager.js";
 import type { ConfigService } from "../services/configService.js";
 import type { LogStreamService } from "../services/logStreamService.js";
+import type { UiPreferencesService } from "../services/uiPreferencesService.js";
 
 const configSchema = z.object({
   raw: z.string().min(1)
 });
 
+const preferencesSchema = z.object({
+  monitorCollapsed: z.boolean().optional(),
+  progressMode: z.enum(["estimated_from_logs", "activity_only", "strict_percent_only"]).optional()
+});
+
 export function createUnpackerrRouter(
   manager: UnpackerrManager,
   config: ConfigService,
-  logs: LogStreamService
+  logs: LogStreamService,
+  uiPreferences: UiPreferencesService
 ): Router {
   const router = Router();
 
@@ -102,6 +109,23 @@ export function createUnpackerrRouter(
         return;
       }
       res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/preferences", async (_req, res, next) => {
+    try {
+      res.json(await uiPreferences.read());
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.put("/preferences", async (req, res, next) => {
+    try {
+      const parsed = preferencesSchema.parse(req.body);
+      res.json(await uiPreferences.update(parsed));
     } catch (error) {
       next(error);
     }

@@ -233,3 +233,91 @@ textarea {
   margin-right: 0.4rem;
   color: #93c5fd;
 }
+
+.monitor-cards-wrap {
+  display: grid;
+  gap: 0.7rem;
+  margin-bottom: 0.7rem;
+}
+
+.monitor-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.7rem;
+}
+
+.monitor-card-group {
+  border: 1px solid #21324b;
+  border-radius: 8px;
+  background: #0a1324;
+  padding: 0.65rem;
+}
+
+.monitor-card-group h3 {
+  margin: 0 0 0.5rem;
+}
+
+.job-card {
+  border: 1px solid #2a3e5e;
+  border-radius: 8px;
+  padding: 0.55rem;
+  background: #0f1a2d;
+  margin-bottom: 0.5rem;
+}
+
+.job-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+
+.state-failed {
+  border-color: #7f1d1d;
+}
+
+.state-done {
+  border-color: #1f4a2f;
+}
+
+.progress-shell {
+  width: 100%;
+  height: 10px;
+  border: 1px solid #34445d;
+  border-radius: 999px;
+  background: #0a0f1c;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+}
+
+.progress-indeterminate {
+  height: 100%;
+  width: 45%;
+  background: linear-gradient(90deg, #3b82f6, #93c5fd);
+  animation: progress-slide 1.2s infinite linear;
+}
+
+@keyframes progress-slide {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(220%);
+  }
+}
+
+.monitor-warning {
+  border: 1px solid #7c5a17;
+  border-radius: 8px;
+  background: #2d2210;
+  padding: 0.55rem;
+  color: #fde68a;
+}
+
+.monitor-warning p {
+  margin: 0.2rem 0;
+}

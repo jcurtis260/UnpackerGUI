@@ -6,6 +6,7 @@ import { createUnpackerrRouter } from "./routes/unpackerr.js";
 import { LogStreamService } from "./services/logStreamService.js";
 import { ConfigService } from "./services/configService.js";
 import { UnpackerrManager } from "./services/unpackerrManager.js";
+import { UiPreferencesService } from "./services/uiPreferencesService.js";
 
 const app = express();
 app.use(cors());
@@ -21,6 +22,7 @@ const unpackerrBinaryPath = process.env.UNPACKERR_BINARY_PATH ?? path.join(binDi
 const logStream = new LogStreamService();
 const configService = new ConfigService(configPath);
 const unpackerrManager = new UnpackerrManager(unpackerrBinaryPath, configPath, logPath, logStream);
+const uiPreferencesService = new UiPreferencesService(dataDir);
 const frontendDist = path.resolve(process.cwd(), "frontend", "dist");
 
 function bootLog(message: string): void {
@@ -70,7 +72,7 @@ app.get("/api/unpackerr/events", (req, res) => {
   });
 });
 
-app.use("/api/unpackerr", createUnpackerrRouter(unpackerrManager, configService, logStream));
+app.use("/api/unpackerr", createUnpackerrRouter(unpackerrManager, configService, logStream, uiPreferencesService));
 app.use(express.static(frontendDist));
 app.get("*", async (req, res, next) => {
   if (req.path.startsWith("/api/")) {
@@ -104,6 +106,9 @@ async function bootstrap(): Promise<void> {
   bootLog("Ensuring runtime directories exist...");
   await unpackerrManager.ensureDirectories();
   bootLog("Runtime directories ready.");
+  await uiPreferencesService.ensureExists();
+  const preferences = await uiPreferencesService.read();
+  bootLog(`UI preferences loaded: progressMode=${preferences.progressMode}, monitorCollapsed=${preferences.monitorCollapsed}`);
 
   const status = await unpackerrManager.getStatus();
   bootLog(

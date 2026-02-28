@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { api } from "../api/client";
+import { api, type ProgressMode, type UiPreferences } from "../api/client";
 import {
   defaultModel,
   parseRawToParsed,
@@ -20,6 +20,10 @@ export function Settings(): JSX.Element {
   const [formDirty, setFormDirty] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [preferences, setPreferences] = useState<UiPreferences>({
+    monitorCollapsed: false,
+    progressMode: "estimated_from_logs"
+  });
 
   useEffect(() => {
     void (async () => {
@@ -29,6 +33,7 @@ export function Settings(): JSX.Element {
         setSavedRaw(config.raw);
         setBaseParsed(config.parsed);
         setFormModel(toFormModel(config.parsed));
+        setPreferences(await api.getPreferences());
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load config.");
       }
@@ -36,6 +41,19 @@ export function Settings(): JSX.Element {
   }, []);
 
   const unsaved = useMemo(() => rawConfig !== savedRaw || formDirty, [rawConfig, savedRaw, formDirty]);
+  const monitorWarnings = useMemo(() => {
+    const warnings: string[] = [];
+    if (preferences.progressMode === "estimated_from_logs" && !formModel.debug) {
+      warnings.push("Estimated progress works best with debug logging enabled.");
+    }
+    if (preferences.progressMode === "strict_percent_only") {
+      warnings.push("Strict percent mode only displays progress when explicit % appears in logs.");
+    }
+    if (preferences.progressMode === "activity_only") {
+      warnings.push("Activity-only mode shows indeterminate bars and no numeric percentage.");
+    }
+    return warnings;
+  }, [preferences.progressMode, formModel.debug]);
 
   const validateRaw = async (text: string): Promise<void> => {
     const result = await api.validateConfig(text);
@@ -146,6 +164,18 @@ export function Settings(): JSX.Element {
     setMessage(`${section} section reset to defaults.`);
   };
 
+  const saveProgressMode = async (mode: ProgressMode): Promise<void> => {
+    setMessage("");
+    setError("");
+    try {
+      const saved = await api.savePreferences({ progressMode: mode });
+      setPreferences(saved);
+      setMessage("Monitor progress mode saved.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save monitor preferences.");
+    }
+  };
+
   return (
     <div className="panel">
       <div className="settings-page-header">
@@ -162,6 +192,41 @@ export function Settings(): JSX.Element {
       </div>
       {message ? <p className="ok">{message}</p> : null}
       {error ? <p className="error">{error}</p> : null}
+      <div className="settings-card">
+        <div className="settings-card-header">
+          <div>
+            <h3>Monitor Preferences</h3>
+            <p className="hint">Choose how progress bars should be rendered in Live Monitor.</p>
+          </div>
+        </div>
+        <div className="button-row">
+          <button
+            className={preferences.progressMode === "estimated_from_logs" ? "active" : ""}
+            onClick={() => void saveProgressMode("estimated_from_logs")}
+          >
+            Estimated from logs
+          </button>
+          <button
+            className={preferences.progressMode === "activity_only" ? "active" : ""}
+            onClick={() => void saveProgressMode("activity_only")}
+          >
+            Activity only
+          </button>
+          <button
+            className={preferences.progressMode === "strict_percent_only" ? "active" : ""}
+            onClick={() => void saveProgressMode("strict_percent_only")}
+          >
+            Strict percent only
+          </button>
+        </div>
+        {monitorWarnings.length ? (
+          <div className="monitor-warning">
+            {monitorWarnings.map((warning) => (
+              <p key={warning}>{warning}</p>
+            ))}
+          </div>
+        ) : null}
+      </div>
       {mode === "guided" ? (
         <div>
           <GuidedSettingsForm

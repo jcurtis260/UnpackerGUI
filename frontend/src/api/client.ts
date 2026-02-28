@@ -13,6 +13,13 @@ export type RuntimeLogEvent = {
   message: string;
 };
 
+export type ProgressMode = "estimated_from_logs" | "activity_only" | "strict_percent_only";
+
+export type UiPreferences = {
+  monitorCollapsed: boolean;
+  progressMode: ProgressMode;
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     headers: {
@@ -61,5 +68,11 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ raw })
     }),
-  validateConfig: (raw: string) => validateConfigRequest(raw)
+  validateConfig: (raw: string) => validateConfigRequest(raw),
+  getPreferences: () => request<UiPreferences>("/api/unpackerr/preferences"),
+  savePreferences: (payload: Partial<UiPreferences>) =>
+    request<UiPreferences>("/api/unpackerr/preferences", {
+      method: "PUT",
+      body: JSON.stringify(payload)
+    })
 };
