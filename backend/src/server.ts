@@ -26,6 +26,7 @@ const configService = new ConfigService(configPath);
 const unpackerrManager = new UnpackerrManager(unpackerrBinaryPath, configPath, logPath, logStream);
 const uiPreferencesService = new UiPreferencesService(dataDir);
 const frontendDist = path.resolve(process.cwd(), "frontend", "dist");
+const EXTERNAL_LOG_POLL_MS = 1500;
 
 function bootLog(message: string): void {
   const ts = new Date().toISOString();
@@ -36,6 +37,73 @@ function bootLog(message: string): void {
     level: "info",
     message: line
   });
+}
+
+function publishExternalLogLine(line: string): void {
+  const trimmed = line.trim();
+  if (!trimmed) {
+    return;
+  }
+  let level: "info" | "stderr" = "info";
+  if (trimmed.toLowerCase().includes("[error]") || trimmed.toLowerCase().includes(" error ")) {
+    level = "stderr";
+  }
+  logStream.publish({
+    ts: new Date().toISOString(),
+    level,
+    message: `[unpackerr] ${trimmed}`
+  });
+}
+
+async function startExternalLogTailer(filePath: string): Promise<void> {
+  // Ensure the log file exists even before unpackerr writes first line.
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  try {
+    await fs.access(filePath);
+  } catch {
+    await fs.writeFile(filePath, "", "utf-8");
+  }
+
+  let offset = 0;
+  let remainder = "";
+
+  const poll = async (): Promise<void> => {
+    try {
+      const handle = await fs.open(filePath, "r");
+      try {
+        const stats = await handle.stat();
+        if (stats.size < offset) {
+          offset = 0;
+          remainder = "";
+        }
+        if (stats.size === offset) {
+          return;
+        }
+        const bytesToRead = stats.size - offset;
+        const buffer = Buffer.alloc(bytesToRead);
+        const result = await handle.read(buffer, 0, bytesToRead, offset);
+        offset += result.bytesRead;
+
+        const chunk = remainder + buffer.toString("utf-8", 0, result.bytesRead);
+        const lines = chunk.split(/\r?\n/);
+        remainder = lines.pop() ?? "";
+        for (const line of lines) {
+          publishExternalLogLine(line);
+        }
+      } finally {
+        await handle.close();
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown external log tail error";
+      bootLog(`External log tail error: ${message}`);
+    }
+  };
+
+  const timer = setInterval(() => {
+    void poll();
+  }, EXTERNAL_LOG_POLL_MS);
+  timer.unref();
+  bootLog(`External unpackerr log tailer started for ${filePath}`);
 }
 
 async function getAppVersion(): Promise<string> {
@@ -174,6 +242,8 @@ async function bootstrap(): Promise<void> {
   } catch {
     bootLog("Frontend bundle missing. Requests to / will return 404 until built.");
   }
+
+  await startExternalLogTailer(logPath);
 
   bootLog(`Binding HTTP server on :${port}...`);
   app.listen(port, () => {

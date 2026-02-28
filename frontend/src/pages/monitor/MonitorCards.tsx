@@ -23,6 +23,9 @@ function ProgressBar({ progress, indeterminate }: { progress: number | null; ind
 }
 
 function JobCardView({ card }: { card: JobCard }): JSX.Element {
+  const progressLabel =
+    card.progress !== null ? `${card.progress}%` : card.indeterminate ? "Waiting for explicit progress..." : "In progress";
+
   return (
     <div className={`job-card state-${card.state}`}>
       <div className="job-card-head">
@@ -30,7 +33,7 @@ function JobCardView({ card }: { card: JobCard }): JSX.Element {
         <span>{card.state}</span>
       </div>
       <ProgressBar progress={card.progress} indeterminate={card.indeterminate} />
-      <p className="hint">{card.progress !== null ? `${card.progress}%` : "In progress"}</p>
+      <p className="hint">{progressLabel}</p>
       <p className="hint">{card.lastMessage}</p>
     </div>
   );

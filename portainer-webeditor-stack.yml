@@ -24,12 +24,14 @@ services:
       apk add --no-cache git;
       mkdir -p /opt/app;
       if [ ! -d /opt/app/.git ]; then
-        git clone --branch \"$APP_REF\" --single-branch \"$APP_REPO\" /opt/app;
+        git clone --branch \"$$APP_REF\" --single-branch \"$$APP_REPO\" /opt/app;
       fi;
       cd /opt/app;
-      git fetch origin \"$APP_REF\";
-      git checkout \"$APP_REF\";
-      git reset --hard \"origin/$APP_REF\";
+      git fetch origin \"$$APP_REF\";
+      git checkout \"$$APP_REF\";
+      git reset --hard \"origin/$$APP_REF\";
+      export BUILD_COMMIT=$$(git rev-parse --short HEAD 2>/dev/null || echo unknown);
+      export BUILD_TIME=$$(date -u +%Y-%m-%dT%H:%M:%SZ);
       npm install;
       npm run build;
       cd backend;
@@ -44,6 +46,17 @@ services:
       timeout: 5s
       retries: 3
       start_period: 60s
+
+  unpackerr:
+    image: ghcr.io/unpackerr/unpackerr:latest
+    container_name: unpackerr
+    restart: unless-stopped
+    environment:
+      UN_CONFIG_FILE: /data/config/unpackerr.conf
+      UN_LOG_FILE: /data/logs/unpackerr.log
+    volumes:
+      - unpackerr_data:/data
+      - /Volume2/Media/downloads:/downloads
 
 volumes:
   unpackerr_data:

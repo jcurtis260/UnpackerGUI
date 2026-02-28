@@ -6,6 +6,16 @@ const START_HINTS = ["starting", "extracting", "unpacking", "processing"];
 const VERIFY_HINTS = ["verifying", "import", "finalizing"];
 const DONE_HINTS = ["done", "finished", "success", "completed", "imported"];
 const FAIL_HINTS = ["error", "failed", "panic", "unable", "fatal"];
+const UNPACK_CONTEXT_HINTS = ["unpack", "extract", "archive", "rar", "zip", "7z", "queued", "queue"];
+const NON_JOB_HINTS = [
+  "[boot]",
+  "unpackerr gui backend",
+  "binding http server",
+  "frontend bundle detected",
+  "runtime directories",
+  "config file ready",
+  "ui preferences loaded"
+];
 
 function containsHint(text: string, hints: string[]): boolean {
   const lc = text.toLowerCase();
@@ -59,7 +69,7 @@ function getState(message: string): JobState {
 function deriveProgress(message: string, state: JobState, mode: ProgressMode): { progress: number | null; indeterminate: boolean } {
   const explicit = parsePercent(message);
   if (mode === "strict_percent_only") {
-    return { progress: explicit, indeterminate: false };
+    return { progress: explicit, indeterminate: explicit === null && state !== "done" && state !== "failed" };
   }
   if (mode === "activity_only") {
     return { progress: null, indeterminate: state === "running" || state === "verifying" || state === "queued" };
@@ -83,7 +93,12 @@ function deriveProgress(message: string, state: JobState, mode: ProgressMode): {
 }
 
 function shouldTrack(message: string): boolean {
-  return containsHint(message, [...QUEUE_HINTS, ...START_HINTS, ...VERIFY_HINTS, ...DONE_HINTS, ...FAIL_HINTS]);
+  if (containsHint(message, NON_JOB_HINTS)) {
+    return false;
+  }
+  const hasLifecycleSignal = containsHint(message, [...QUEUE_HINTS, ...START_HINTS, ...VERIFY_HINTS, ...DONE_HINTS, ...FAIL_HINTS]);
+  const hasUnpackContext = containsHint(message, UNPACK_CONTEXT_HINTS);
+  return hasLifecycleSignal && hasUnpackContext;
 }
 
 export function buildMonitorState({ events, mode }: TrackerInput): MonitorViewState {
@@ -103,6 +118,12 @@ export function buildMonitorState({ events, mode }: TrackerInput): MonitorViewSt
     }
 
     const existing = jobs.get(id);
+    if (existing?.state === "done" || existing?.state === "failed") {
+      // Keep terminal state stable; ignore later non-terminal noise for same label.
+      if (state !== "done" && state !== "failed") {
+        continue;
+      }
+    }
     jobs.set(id, {
       id,
       label,
@@ -110,8 +131,7 @@ export function buildMonitorState({ events, mode }: TrackerInput): MonitorViewSt
       progress: progressState.progress,
       indeterminate: progressState.indeterminate,
       lastMessage: event.message,
-      updatedAt: event.ts,
-      ...(existing ? {} : {})
+      updatedAt: event.ts
     });
   }
 
