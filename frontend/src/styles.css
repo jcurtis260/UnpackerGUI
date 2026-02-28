@@ -80,3 +80,156 @@ textarea {
 .ok {
   color: #86efac;
 }
+
+.hint {
+  color: #9ca3af;
+  margin: 0.2rem 0;
+}
+
+.settings-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ok-chip,
+.warn-chip {
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.8rem;
+  border: 1px solid #374151;
+}
+
+.ok-chip {
+  color: #86efac;
+}
+
+.warn-chip {
+  color: #facc15;
+}
+
+.settings-layout {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.settings-card {
+  border: 1px solid #1f2c43;
+  border-radius: 10px;
+  padding: 0.8rem;
+  background: #0b1730;
+  margin-top: 0.8rem;
+}
+
+.settings-card h3 {
+  margin: 0;
+}
+
+.settings-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-bottom: 0.6rem;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.7rem;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.settings-field > span {
+  font-size: 0.92rem;
+}
+
+.settings-field input {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #030712;
+  color: #e5e7eb;
+  padding: 0.45rem 0.5rem;
+}
+
+.settings-field.checkbox {
+  padding: 0.3rem 0.4rem;
+  border: 1px solid #243142;
+  border-radius: 8px;
+  background: #0b1220;
+}
+
+.settings-field.checkbox input {
+  width: 1rem;
+  height: 1rem;
+  padding: 0;
+}
+
+.chip-row {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.chip {
+  background: #0f2447;
+  border-color: #27467f;
+  font-size: 0.78rem;
+  padding: 0.2rem 0.45rem;
+}
+
+.instance-box {
+  border: 1px solid #223353;
+  border-radius: 8px;
+  padding: 0.65rem;
+  background: #0a1324;
+  margin-bottom: 0.6rem;
+}
+
+.instance-box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.hint-box {
+  border: 1px solid #2b3a4f;
+  border-radius: 8px;
+  background: #121f36;
+  padding: 0.5rem 0.6rem;
+  margin-bottom: 0.6rem;
+}
+
+.catalog-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.catalog-section {
+  border: 1px solid #233248;
+  border-radius: 8px;
+  padding: 0.65rem;
+  background: #0a1324;
+}
+
+.catalog-item {
+  border: 1px solid #24344a;
+  border-radius: 8px;
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  background: #0d172b;
+}
+
+.catalog-item code {
+  display: inline-block;
+  margin-right: 0.4rem;
+  color: #93c5fd;
+}

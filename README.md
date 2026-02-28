@@ -30,6 +30,15 @@ docker compose up -d --build
 
 - `http://localhost:8080`
 
+## Portainer stack (test)
+
+Use `portainer-stack.yml` if you want to deploy from Portainer.
+
+- Stack file: `portainer-stack.yml`
+- Host bind set for your downloads: `/Volume2/Media/downloads:/downloads`
+
+Important: this stack uses `build:` so deploy it from **Git repository** mode in Portainer (repo URL + compose path), not the plain Web Editor with no source context.
+
 ## UI pages
 
 - **Monitor**: live stream of Unpackerr output (SSE) and runtime status.

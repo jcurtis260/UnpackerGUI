@@ -1,0 +1,29 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    container_name: unpackerr-gui-web
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: 8080
+      DATA_DIR: /data
+      BIN_DIR: /data/bin
+      UNPACKERR_BINARY_PATH: /data/bin/unpackerr
+      UNPACKERR_CONFIG_PATH: /data/config/unpackerr.conf
+      UNPACKERR_LOG_PATH: /data/logs/unpackerr.log
+      DOWNLOADS_PATH: /downloads
+    volumes:
+      - unpackerr_data:/data
+      - /Volume2/Media/downloads:/downloads
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
+    restart: unless-stopped
+
+volumes:
+  unpackerr_data:

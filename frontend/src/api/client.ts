@@ -27,6 +27,26 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
+async function validateConfigRequest(
+  raw: string
+): Promise<{ valid: true; parsed: unknown } | { valid: false; error: string }> {
+  const response = await fetch("/api/unpackerr/config/validate", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ raw })
+  });
+  const body = await response.json().catch(() => null);
+  if (response.ok) {
+    return body as { valid: true; parsed: unknown };
+  }
+  return {
+    valid: false,
+    error: body?.error ?? body?.message ?? "Validation failed."
+  };
+}
+
 export const api = {
   status: () => request<RuntimeStatus>("/api/unpackerr/status"),
   install: () => request<{ version: string; binaryPath: string }>("/api/unpackerr/install", { method: "POST" }),
@@ -41,9 +61,5 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ raw })
     }),
-  validateConfig: (raw: string) =>
-    request<{ valid: true; parsed: unknown } | { valid: false; error: string }>("/api/unpackerr/config/validate", {
-      method: "POST",
-      body: JSON.stringify({ raw })
-    })
+  validateConfig: (raw: string) => validateConfigRequest(raw)
 };
