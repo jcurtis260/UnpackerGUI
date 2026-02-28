@@ -21,6 +21,29 @@ const unpackerrBinaryPath = process.env.UNPACKERR_BINARY_PATH ?? path.join(binDi
 const logStream = new LogStreamService();
 const configService = new ConfigService(configPath);
 const unpackerrManager = new UnpackerrManager(unpackerrBinaryPath, configPath, logPath, logStream);
+const frontendDist = path.resolve(process.cwd(), "frontend", "dist");
+
+function bootLog(message: string): void {
+  const ts = new Date().toISOString();
+  const line = `[boot] ${message}`;
+  console.log(line);
+  logStream.publish({
+    ts,
+    level: "info",
+    message: line
+  });
+}
+
+async function getAppVersion(): Promise<string> {
+  try {
+    const packagePath = path.resolve(process.cwd(), "backend", "package.json");
+    const raw = await fs.readFile(packagePath, "utf-8");
+    const parsed = JSON.parse(raw) as { version?: string };
+    return parsed.version ?? "unknown";
+  } catch {
+    return "unknown";
+  }
+}
 
 app.get("/api/health", async (_req, res) => {
   const status = await unpackerrManager.getStatus();
@@ -48,8 +71,6 @@ app.get("/api/unpackerr/events", (req, res) => {
 });
 
 app.use("/api/unpackerr", createUnpackerrRouter(unpackerrManager, configService, logStream));
-
-const frontendDist = path.resolve(process.cwd(), "frontend", "dist");
 app.use(express.static(frontendDist));
 app.get("*", async (req, res, next) => {
   if (req.path.startsWith("/api/")) {
@@ -71,11 +92,35 @@ app.use((error: unknown, _req: express.Request, res: express.Response, _next: ex
 });
 
 async function bootstrap(): Promise<void> {
+  const appVersion = await getAppVersion();
+  bootLog(`Starting Unpackerr GUI backend v${appVersion}`);
+  bootLog(`Data directory: ${dataDir}`);
+  bootLog(`Config path: ${configPath}`);
+  bootLog(`Binary path: ${unpackerrBinaryPath}`);
+  bootLog(`Log path: ${logPath}`);
+  bootLog("Ensuring config file exists...");
   await configService.ensureExists();
+  bootLog("Config file ready.");
+  bootLog("Ensuring runtime directories exist...");
   await unpackerrManager.ensureDirectories();
+  bootLog("Runtime directories ready.");
+
+  const status = await unpackerrManager.getStatus();
+  bootLog(
+    `Unpackerr status: installed=${status.installed}, running=${status.running}, version=${status.version ?? "n/a"}`
+  );
+
+  try {
+    const frontendIndexPath = path.join(frontendDist, "index.html");
+    await fs.access(frontendIndexPath);
+    bootLog(`Frontend bundle detected at ${frontendIndexPath}`);
+  } catch {
+    bootLog("Frontend bundle missing. Requests to / will return 404 until built.");
+  }
+
+  bootLog(`Binding HTTP server on :${port}...`);
   app.listen(port, () => {
-    // Startup information helps with container diagnostics.
-    console.log(`Unpackerr GUI backend listening on :${port}`);
+    bootLog(`Unpackerr GUI backend listening on :${port}`);
   });
 }
 
