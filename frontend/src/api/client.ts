@@ -26,6 +26,49 @@ export type BuildInfo = {
   buildTime: string;
 };
 
+export type MountRoot = {
+  id: string;
+  label: string;
+  absolutePath: string;
+};
+
+export type FileListEntry = {
+  name: string;
+  relativePath: string;
+  isDirectory: boolean;
+  size: number;
+  modifiedAt: string;
+};
+
+export type FileListResult = {
+  root: MountRoot;
+  currentPath: string;
+  parentPath: string | null;
+  entries: FileListEntry[];
+};
+
+export type QueueJobState = "queued" | "running" | "done" | "failed" | "cancelled";
+
+export type QueueJob = {
+  id: string;
+  rootId: string;
+  rootLabel: string;
+  sourceRelativePath: string;
+  sourceAbsolutePath: string;
+  outputPath: string | null;
+  state: QueueJobState;
+  createdAt: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+  error: string | null;
+};
+
+export type QueueSnapshot = {
+  active: QueueJob | null;
+  queued: QueueJob[];
+  history: QueueJob[];
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     headers: {
@@ -81,5 +124,15 @@ export const api = {
       method: "PUT",
       body: JSON.stringify(payload)
     }),
-  getVersion: () => request<BuildInfo>("/api/version")
+  getVersion: () => request<BuildInfo>("/api/version"),
+  getMounts: () => request<{ mounts: MountRoot[] }>("/api/unpackerr/files/mounts"),
+  listFiles: (rootId: string, filePath = "") =>
+    request<FileListResult>(`/api/unpackerr/files/list?rootId=${encodeURIComponent(rootId)}&path=${encodeURIComponent(filePath)}`),
+  getQueue: () => request<QueueSnapshot>("/api/unpackerr/queue"),
+  enqueueArchive: (rootId: string, relativePath: string) =>
+    request<QueueJob>("/api/unpackerr/queue", {
+      method: "POST",
+      body: JSON.stringify({ rootId, relativePath })
+    }),
+  cancelQueueJob: (id: string) => request<{ cancelled: boolean }>(`/api/unpackerr/queue/${encodeURIComponent(id)}/cancel`, { method: "POST" })
 };

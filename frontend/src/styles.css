@@ -328,3 +328,61 @@ textarea {
 .monitor-warning p {
   margin: 0.2rem 0;
 }
+
+.file-manager-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr;
+  gap: 0.75rem;
+}
+
+.mount-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.mount-item {
+  text-align: left;
+}
+
+.file-list {
+  border: 1px solid #24344a;
+  border-radius: 8px;
+  background: #0d172b;
+  padding: 0.5rem;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.file-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.65rem;
+  border-bottom: 1px solid #1d2a3e;
+  padding: 0.3rem 0;
+}
+
+.file-row:last-child {
+  border-bottom: 0;
+}
+
+.file-name-btn {
+  padding: 0.2rem 0.3rem;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.file-pick-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.queue-job-row {
+  border: 1px solid #21324b;
+  border-radius: 8px;
+  background: #0a1324;
+  padding: 0.6rem;
+  margin-bottom: 0.55rem;
+}

@@ -4,6 +4,8 @@ import type { UnpackerrManager } from "../services/unpackerrManager.js";
 import type { ConfigService } from "../services/configService.js";
 import type { LogStreamService } from "../services/logStreamService.js";
 import type { UiPreferencesService } from "../services/uiPreferencesService.js";
+import type { FileBrowserService } from "../services/fileBrowserService.js";
+import type { FileQueueService } from "../services/fileQueueService.js";
 
 const configSchema = z.object({
   raw: z.string().min(1)
@@ -14,11 +16,27 @@ const preferencesSchema = z.object({
   progressMode: z.enum(["estimated_from_logs", "activity_only", "strict_percent_only"]).optional()
 });
 
+const listFilesQuerySchema = z.object({
+  rootId: z.string().min(1),
+  path: z.string().optional()
+});
+
+const queueEnqueueSchema = z.object({
+  rootId: z.string().min(1),
+  relativePath: z.string().min(1)
+});
+
+const queueCancelSchema = z.object({
+  id: z.string().min(1)
+});
+
 export function createUnpackerrRouter(
   manager: UnpackerrManager,
   config: ConfigService,
   logs: LogStreamService,
-  uiPreferences: UiPreferencesService
+  uiPreferences: UiPreferencesService,
+  fileBrowser: FileBrowserService,
+  fileQueue: FileQueueService
 ): Router {
   const router = Router();
 
@@ -126,6 +144,54 @@ export function createUnpackerrRouter(
     try {
       const parsed = preferencesSchema.parse(req.body);
       res.json(await uiPreferences.update(parsed));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/files/mounts", async (_req, res, next) => {
+    try {
+      res.json({
+        mounts: fileBrowser.getMountRoots()
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/files/list", async (req, res, next) => {
+    try {
+      const parsed = listFilesQuerySchema.parse({
+        rootId: req.query.rootId,
+        path: req.query.path
+      });
+      res.json(await fileBrowser.list(parsed.rootId, parsed.path ?? ""));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/queue", async (_req, res, next) => {
+    try {
+      res.json(fileQueue.getSnapshot());
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/queue", async (req, res, next) => {
+    try {
+      const parsed = queueEnqueueSchema.parse(req.body);
+      res.json(await fileQueue.enqueue(parsed.rootId, parsed.relativePath));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/queue/:id/cancel", async (req, res, next) => {
+    try {
+      const parsed = queueCancelSchema.parse(req.params);
+      res.json(await fileQueue.cancel(parsed.id));
     } catch (error) {
       next(error);
     }

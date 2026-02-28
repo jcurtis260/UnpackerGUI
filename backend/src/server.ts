@@ -7,6 +7,8 @@ import { LogStreamService } from "./services/logStreamService.js";
 import { ConfigService } from "./services/configService.js";
 import { UnpackerrManager } from "./services/unpackerrManager.js";
 import { UiPreferencesService } from "./services/uiPreferencesService.js";
+import { FileBrowserService } from "./services/fileBrowserService.js";
+import { FileQueueService } from "./services/fileQueueService.js";
 
 const app = express();
 app.use(cors());
@@ -25,6 +27,8 @@ const logStream = new LogStreamService();
 const configService = new ConfigService(configPath);
 const unpackerrManager = new UnpackerrManager(unpackerrBinaryPath, configPath, logPath, logStream);
 const uiPreferencesService = new UiPreferencesService(dataDir);
+const fileBrowserService = new FileBrowserService();
+const fileQueueService = new FileQueueService(dataDir, fileBrowserService, logStream);
 const frontendDist = path.resolve(process.cwd(), "frontend", "dist");
 const EXTERNAL_LOG_POLL_MS = 1500;
 
@@ -186,7 +190,10 @@ app.get("/api/unpackerr/events", (req, res) => {
   });
 });
 
-app.use("/api/unpackerr", createUnpackerrRouter(unpackerrManager, configService, logStream, uiPreferencesService));
+app.use(
+  "/api/unpackerr",
+  createUnpackerrRouter(unpackerrManager, configService, logStream, uiPreferencesService, fileBrowserService, fileQueueService)
+);
 app.use(express.static(frontendDist));
 app.get("*", async (req, res, next) => {
   if (req.path.startsWith("/api/")) {
@@ -229,6 +236,9 @@ async function bootstrap(): Promise<void> {
   await uiPreferencesService.ensureExists();
   const preferences = await uiPreferencesService.read();
   bootLog(`UI preferences loaded: progressMode=${preferences.progressMode}, monitorCollapsed=${preferences.monitorCollapsed}`);
+  await fileQueueService.ensureExists();
+  const mounts = fileBrowserService.getMountRoots();
+  bootLog(`Mounted roots detected: ${mounts.map((mount) => `${mount.label}=${mount.absolutePath}`).join(", ") || "none"}`);
 
   const status = await unpackerrManager.getStatus();
   bootLog(
