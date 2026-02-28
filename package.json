@@ -1,0 +1,14 @@
+{
+  "name": "unpackerr-gui-platform",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "build": "npm run build -w backend && npm run build -w frontend",
+    "dev": "npm run dev -w backend",
+    "start": "node backend/dist/server.js"
+  }
+}
