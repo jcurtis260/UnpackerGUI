@@ -6,6 +6,7 @@ import type { LogStreamService } from "../services/logStreamService.js";
 import type { UiPreferencesService } from "../services/uiPreferencesService.js";
 import type { FileBrowserService } from "../services/fileBrowserService.js";
 import type { FileQueueService } from "../services/fileQueueService.js";
+import type { ToolInstallService } from "../services/toolInstallService.js";
 
 const configSchema = z.object({
   raw: z.string().min(1)
@@ -30,13 +31,18 @@ const queueCancelSchema = z.object({
   id: z.string().min(1)
 });
 
+const installToolSchema = z.object({
+  tool: z.enum(["7z", "unrar"])
+});
+
 export function createUnpackerrRouter(
   manager: UnpackerrManager,
   config: ConfigService,
   logs: LogStreamService,
   uiPreferences: UiPreferencesService,
   fileBrowser: FileBrowserService,
-  fileQueue: FileQueueService
+  fileQueue: FileQueueService,
+  toolInstaller: ToolInstallService
 ): Router {
   const router = Router();
 
@@ -192,6 +198,23 @@ export function createUnpackerrRouter(
     try {
       const parsed = queueCancelSchema.parse(req.params);
       res.json(await fileQueue.cancel(parsed.id));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/tools/status", async (_req, res, next) => {
+    try {
+      res.json(await toolInstaller.getStatus());
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/tools/install", async (req, res, next) => {
+    try {
+      const parsed = installToolSchema.parse(req.body);
+      res.json(await toolInstaller.install(parsed.tool));
     } catch (error) {
       next(error);
     }

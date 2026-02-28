@@ -69,6 +69,11 @@ export type QueueSnapshot = {
   history: QueueJob[];
 };
 
+export type ToolStatus = {
+  sevenZip: boolean;
+  unrar: boolean;
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     headers: {
@@ -134,5 +139,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ rootId, relativePath })
     }),
-  cancelQueueJob: (id: string) => request<{ cancelled: boolean }>(`/api/unpackerr/queue/${encodeURIComponent(id)}/cancel`, { method: "POST" })
+  cancelQueueJob: (id: string) => request<{ cancelled: boolean }>(`/api/unpackerr/queue/${encodeURIComponent(id)}/cancel`, { method: "POST" }),
+  getToolStatus: () => request<ToolStatus>("/api/unpackerr/tools/status"),
+  installTool: (tool: "7z" | "unrar") =>
+    request<{ tool: "7z" | "unrar"; installed: boolean; message: string }>("/api/unpackerr/tools/install", {
+      method: "POST",
+      body: JSON.stringify({ tool })
+    })
 };

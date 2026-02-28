@@ -9,6 +9,7 @@ import { UnpackerrManager } from "./services/unpackerrManager.js";
 import { UiPreferencesService } from "./services/uiPreferencesService.js";
 import { FileBrowserService } from "./services/fileBrowserService.js";
 import { FileQueueService } from "./services/fileQueueService.js";
+import { ToolInstallService } from "./services/toolInstallService.js";
 
 const app = express();
 app.use(cors());
@@ -29,6 +30,7 @@ const unpackerrManager = new UnpackerrManager(unpackerrBinaryPath, configPath, l
 const uiPreferencesService = new UiPreferencesService(dataDir);
 const fileBrowserService = new FileBrowserService();
 const fileQueueService = new FileQueueService(dataDir, fileBrowserService, logStream);
+const toolInstallService = new ToolInstallService();
 const frontendDist = path.resolve(process.cwd(), "frontend", "dist");
 const EXTERNAL_LOG_POLL_MS = 1500;
 
@@ -192,7 +194,15 @@ app.get("/api/unpackerr/events", (req, res) => {
 
 app.use(
   "/api/unpackerr",
-  createUnpackerrRouter(unpackerrManager, configService, logStream, uiPreferencesService, fileBrowserService, fileQueueService)
+  createUnpackerrRouter(
+    unpackerrManager,
+    configService,
+    logStream,
+    uiPreferencesService,
+    fileBrowserService,
+    fileQueueService,
+    toolInstallService
+  )
 );
 app.use(express.static(frontendDist));
 app.get("*", async (req, res, next) => {
