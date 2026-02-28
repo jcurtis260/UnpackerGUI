@@ -17,6 +17,13 @@ main {
 
 h1 {
   margin-top: 0;
+  margin-bottom: 0.15rem;
+}
+
+.build-stamp {
+  margin: 0 0 0.8rem;
+  color: #93a4bf;
+  font-size: 0.86rem;
 }
 
 .tab-row,

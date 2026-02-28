@@ -1,16 +1,33 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dashboard } from "./pages/Dashboard";
 import { Lifecycle } from "./pages/Lifecycle";
 import { Settings } from "./pages/Settings";
+import { api, type BuildInfo } from "./api/client";
 
 type Tab = "dashboard" | "lifecycle" | "settings";
 
 export function App(): JSX.Element {
   const [tab, setTab] = useState<Tab>("dashboard");
+  const [buildInfo, setBuildInfo] = useState<BuildInfo | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        setBuildInfo(await api.getVersion());
+      } catch {
+        setBuildInfo(null);
+      }
+    })();
+  }, []);
 
   return (
     <main>
       <h1>Unpackerr Control Plane</h1>
+      {buildInfo ? (
+        <p className="build-stamp">
+          v{buildInfo.appVersion} | commit {buildInfo.buildCommit} | built {buildInfo.buildTime}
+        </p>
+      ) : null}
       <div className="tab-row">
         <button className={tab === "dashboard" ? "active" : ""} onClick={() => setTab("dashboard")}>
           Monitor

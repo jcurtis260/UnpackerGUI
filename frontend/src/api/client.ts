@@ -20,6 +20,12 @@ export type UiPreferences = {
   progressMode: ProgressMode;
 };
 
+export type BuildInfo = {
+  appVersion: string;
+  buildCommit: string;
+  buildTime: string;
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     headers: {
@@ -74,5 +80,6 @@ export const api = {
     request<UiPreferences>("/api/unpackerr/preferences", {
       method: "PUT",
       body: JSON.stringify(payload)
-    })
+    }),
+  getVersion: () => request<BuildInfo>("/api/version")
 };

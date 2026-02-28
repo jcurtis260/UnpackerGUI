@@ -18,6 +18,8 @@ const binDir = process.env.BIN_DIR ?? path.join(dataDir, "bin");
 const configPath = process.env.UNPACKERR_CONFIG_PATH ?? path.join(dataDir, "config", "unpackerr.conf");
 const logPath = process.env.UNPACKERR_LOG_PATH ?? path.join(dataDir, "logs", "unpackerr.log");
 const unpackerrBinaryPath = process.env.UNPACKERR_BINARY_PATH ?? path.join(binDir, "unpackerr");
+const buildCommitPath = path.resolve(process.cwd(), ".build-commit");
+const buildTimePath = path.resolve(process.cwd(), ".build-time");
 
 const logStream = new LogStreamService();
 const configService = new ConfigService(configPath);
@@ -47,9 +49,53 @@ async function getAppVersion(): Promise<string> {
   }
 }
 
+async function getBuildCommit(): Promise<string> {
+  const fromEnv = process.env.BUILD_COMMIT?.trim();
+  if (fromEnv) {
+    return fromEnv;
+  }
+  try {
+    const raw = await fs.readFile(buildCommitPath, "utf-8");
+    return raw.trim() || "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+async function getBuildTime(): Promise<string> {
+  const fromEnv = process.env.BUILD_TIME?.trim();
+  if (fromEnv) {
+    return fromEnv;
+  }
+  try {
+    const raw = await fs.readFile(buildTimePath, "utf-8");
+    return raw.trim() || "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+const runtimeBuildInfo: {
+  appVersion: string;
+  buildCommit: string;
+  buildTime: string;
+} = {
+  appVersion: "unknown",
+  buildCommit: "unknown",
+  buildTime: "unknown"
+};
+
 app.get("/api/health", async (_req, res) => {
   const status = await unpackerrManager.getStatus();
-  res.json({ ok: true, unpackerr: status });
+  res.json({
+    ok: true,
+    unpackerr: status,
+    app: runtimeBuildInfo
+  });
+});
+
+app.get("/api/version", (_req, res) => {
+  res.json(runtimeBuildInfo);
 });
 
 app.get("/api/unpackerr/events", (req, res) => {
@@ -95,7 +141,13 @@ app.use((error: unknown, _req: express.Request, res: express.Response, _next: ex
 
 async function bootstrap(): Promise<void> {
   const appVersion = await getAppVersion();
-  bootLog(`Starting Unpackerr GUI backend v${appVersion}`);
+  const buildCommit = await getBuildCommit();
+  const buildTime = await getBuildTime();
+  runtimeBuildInfo.appVersion = appVersion;
+  runtimeBuildInfo.buildCommit = buildCommit;
+  runtimeBuildInfo.buildTime = buildTime;
+
+  bootLog(`Starting Unpackerr GUI backend v${appVersion} (commit=${buildCommit}, buildTime=${buildTime})`);
   bootLog(`Data directory: ${dataDir}`);
   bootLog(`Config path: ${configPath}`);
   bootLog(`Binary path: ${unpackerrBinaryPath}`);
